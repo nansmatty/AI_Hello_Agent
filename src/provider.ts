@@ -11,6 +11,10 @@ type GeminiGenerateContent = {
 	candidates?: Array<{ content?: { parts?: Array<{ text: string }> } }>;
 };
 
+type OpenAiChatCompletion = {
+	choices?: Array<{ message?: { content?: string } }>;
+};
+
 async function helloGemini(): Promise<HelloOutput> {
 	const apiKey = process.env.GOOGLE_API_KEY;
 	if (!apiKey) {
@@ -49,10 +53,6 @@ async function helloGemini(): Promise<HelloOutput> {
 		message: String(text).trim(),
 	};
 }
-
-type OpenAiChatCompletion = {
-	choices?: Array<{ message?: { content?: string } }>;
-};
 
 async function helloGroq(): Promise<HelloOutput> {
 	const apiKey = process.env.GROQ_API_KEY;
@@ -117,7 +117,7 @@ async function helloOpenAI(): Promise<HelloOutput> {
 			messages: [
 				{
 					role: 'user',
-					content: 'Hello from OpenAi!',
+					content: 'Hello from OpenAI!',
 				},
 			],
 
@@ -138,4 +138,36 @@ async function helloOpenAI(): Promise<HelloOutput> {
 		model,
 		message: String(text).trim(),
 	};
+}
+
+export async function selectAndHello(): Promise<HelloOutput> {
+	const provider = (process.env.PROVIDER || '').toLowerCase();
+
+	if (provider === 'gemini') return helloGemini();
+	if (provider === 'groq') return helloGroq();
+	if (provider === 'openai') return helloOpenAI();
+
+	if (!provider || provider === '') {
+		throw new Error('PROVIDER is not set. Please set it to "gemini", "groq", or "openai".');
+	}
+
+	if (process.env.GOOGLE_API_KEY) {
+		try {
+			return await helloGemini();
+		} catch {}
+	}
+
+	if (process.env.GROQ_API_KEY) {
+		try {
+			return await helloGroq();
+		} catch {}
+	}
+
+	if (process.env.OPENAI_API_KEY) {
+		try {
+			return await helloOpenAI();
+		} catch {}
+	}
+
+	throw new Error('No valid provider could be selected. Please check your API keys and PROVIDER setting.');
 }
